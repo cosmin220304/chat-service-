@@ -1,37 +1,45 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { Conversation } from 'src/dao/dtos/conversation.dto';
 import { Message } from 'src/dao/dtos/message.dto';
 
 @Injectable()
 export class MessageService {
-	constructor(@InjectModel(Message.name) private readonly messageModel: Model<Message>) {}
+	constructor(@InjectModel(Conversation.name) private readonly conversationModel: Model<Conversation>) {}
 
-	async create(message: Message): Promise<Message> {
-		const createdMessage = new this.messageModel(message);
-		return await createdMessage.save();
-	}
-
-	async markAsRead(messageId: string): Promise<Message> {
-		const message = await this.messageModel.findById(messageId);
-		if (!message.isRead) {
-			message.seenDate = new Date();
-			message.isRead = true;
-			return await message.save();
-		}
+	async create(conversationId: string, message: Message): Promise<Message> {
+		const conversation = await this.conversationModel.findById(conversationId);
+		conversation.messages.push(message);
+		await conversation.save();
 		return message;
 	}
 
-	async readAll(conversationId: string, limit: number, offset: number): Promise<Message[]> {
-		return await this.messageModel
-			.find({ conversationId: conversationId })
-			.sort({ sentDate: -1 })
-			.limit(limit)
-			.skip(offset)
-			.exec();
+	async markAsRead(conversationId: string, messageId: string): Promise<void> {
+		const conversation = await this.conversationModel.findById(conversationId);
+		conversation.messages.forEach((message) => {
+			if (message._id === messageId && !message.isRead) {
+				message.seenDate = new Date();
+				message.isRead = true;
+			}
+		});
+		await conversation.save();
 	}
 
-	async readById(id: string): Promise<Message> {
-		return await this.messageModel.findById(id);
+	async readAll(conversationId: string, readerId: string, limit: number, offset: number): Promise<Message[]> {
+		const conversation = await this.conversationModel.findById(conversationId);
+		conversation.messages.forEach((message) => {
+			if (message.receiverId === readerId) {
+				message.isRead = true;
+				message.seenDate = new Date();
+			}
+		});
+		await conversation.save();
+		return conversation.messages.slice(offset, limit);
+	}
+
+	async readById(conversationId: string, messageId: string): Promise<Message> {
+		const conversation = await this.conversationModel.findById(conversationId);
+		return conversation.messages.find((message) => message._id === messageId);
 	}
 }

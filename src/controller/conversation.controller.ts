@@ -21,7 +21,7 @@ export class ConversationController {
 		return await this.conversationService.readConversationsOfUser(userId);
 	}
 
-	@Get('/user1/:userId1/user2/:userId2')
+	@Get('/user/:userId1/receiver/:userId2')
 	@ApiResponse({ status: 200, description: 'The found conversation', type: Conversation })
 	@ApiResponse({ status: 201, description: 'The created conversation', type: Conversation })
 	async getConversationBetweenUsers(

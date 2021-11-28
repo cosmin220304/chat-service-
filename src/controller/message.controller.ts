@@ -1,19 +1,25 @@
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
-import { ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiResponse, ApiTags, ApiQuery } from '@nestjs/swagger';
 import { Message } from 'src/dao/dtos/message.dto';
 import { MessageRequest } from 'src/model/message.model';
-import { ConversationService } from 'src/service/conversation.service';
 import { MessageService } from 'src/service/message.service';
 
 @ApiTags('messages')
 @Controller('conversations/:conversationId/messages')
 export class MessageController {
-	constructor(
-		private readonly messageService: MessageService,
-		private readonly conversationService: ConversationService
-	) {}
+	constructor(private readonly messageService: MessageService) {}
 
 	@Get('/')
+	@ApiQuery({
+		name: 'limit',
+		required: false,
+		type: Number
+	})
+	@ApiQuery({
+		name: 'offset',
+		required: false,
+		type: Number
+	})
 	@ApiResponse({
 		status: 200,
 		description: `The found messages of conversation with id <conversationId>. 
@@ -24,25 +30,26 @@ export class MessageController {
 	})
 	async readAllMessages(
 		@Param('conversationId') conversationId: string,
+		@Query('readerId') readerId: string,
 		@Query('limit') limit?: number,
 		@Query('offset') offset?: number
 	): Promise<Message[]> {
-		const messages = await this.messageService.readAll(conversationId, limit || 20, offset || 0);
-		for (const message of messages) {
-			await this.messageService.markAsRead(message._id);
-		}
+		const messages = await this.messageService.readAll(conversationId, readerId, limit || 20, offset || 0);
 		return messages;
 	}
 
 	@Get('/:messageId')
 	@ApiResponse({ status: 200, description: `The found message`, type: Message })
-	async readMessageById(@Param('messageId') messageId: string): Promise<Message> {
-		return await this.messageService.readById(messageId);
+	async readMessageById(
+		@Param('conversationId') conversationId: string,
+		@Param('messageId') messageId: string
+	): Promise<Message> {
+		const message = await this.messageService.readById(conversationId, messageId);
+		return message;
 	}
 
 	@Post('/')
 	@ApiResponse({ status: 201, description: `The created message`, type: Message })
-	@ApiResponse({ status: 500, description: `Message not created` })
 	async sendMessage(
 		@Param('conversationId') conversationId: string,
 		@Body() message: MessageRequest
@@ -55,13 +62,17 @@ export class MessageController {
 			isRead: false,
 			seenDate: null
 		};
-
-		const createdMessage = await this.messageService.create(newMessage);
-		if (!createdMessage) {
-			throw new Error('Message not created');
-		}
-		await this.conversationService.addMessageToConversation(conversationId, createdMessage);
-
+		const createdMessage = await this.messageService.create(conversationId, newMessage);
 		return createdMessage;
+	}
+
+	@Post('/:messageId/markAsRead')
+	@ApiResponse({ status: 200, description: `The result of operation`, type: Boolean })
+	async markAsReadMessageById(
+		@Param('conversationId') conversationId: string,
+		@Param('messageId') messageId: string
+	): Promise<boolean> {
+		this.messageService.markAsRead(conversationId, messageId);
+		return true;
 	}
 }

@@ -2,8 +2,6 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Schema as MongooseSchema } from 'mongoose';
 import { ApiProperty } from '@nestjs/swagger';
 
-export type MessageDocument = Message & Document;
-
 @Schema()
 export class Message {
 	@ApiProperty()

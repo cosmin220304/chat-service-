@@ -10,13 +10,12 @@ import { Message, MessageSchema } from './dtos/message.dto';
 @Module({
 	imports: [ MongooseModule.forFeature([ { name: Conversation.name, schema: ConversationSchema } ]) ],
 	providers: [ ConversationService ],
-	controllers: [ ConversationController ],
-	exports: [ ConversationService ]
+	controllers: [ ConversationController ]
 })
 export class ConversationModule {}
 
 @Module({
-	imports: [ MongooseModule.forFeature([ { name: Message.name, schema: MessageSchema } ]), ConversationModule ],
+	imports: [ MongooseModule.forFeature([ { name: Conversation.name, schema: ConversationSchema } ]) ],
 	providers: [ MessageService ],
 	controllers: [ MessageController ]
 })
