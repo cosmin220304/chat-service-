@@ -16,6 +16,11 @@ export class MessageController {
 		type: Number
 	})
 	@ApiQuery({
+		name: 'readerId',
+		required: false,
+		type: String
+	})
+	@ApiQuery({
 		name: 'offset',
 		required: false,
 		type: Number
@@ -34,7 +39,7 @@ export class MessageController {
 		@Query('limit') limit?: number,
 		@Query('offset') offset?: number
 	): Promise<Message[]> {
-		const messages = await this.messageService.readAll(conversationId, readerId, limit || 20, offset || 0);
+		const messages = await this.messageService.readAll(conversationId, readerId, limit || 100, offset || 0);
 		return messages;
 	}
 
